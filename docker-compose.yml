@@ -1,0 +1,80 @@
+version: "3.8"
+
+services:
+  postgres:
+    container_name: postgres
+    image: postgres:alpine
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "pg_isready",
+          "-q",
+          "-d",
+          "${POSTGRES_DB}",
+          "-U",
+          "${POSTGRES_USER}"
+        ]
+      timeout: 45s
+      interval: 10s
+      retries: 10
+    restart: always
+    env_file:
+      - .env
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    expose:
+      - ${POSTGRES_PORT}
+
+  redis:
+    container_name: redis
+    image: redis:alpine
+    volumes:
+      - redis:/var/lib/redis
+    ports:
+      - ${REDIS_PORT}
+
+  rust-api:
+    container_name: rust-api
+    build: ../rust-api/
+    ports:
+      - ${RUST_API_PORT}
+    environment:
+      HOST: ${HOST}
+      PORT: ${RUST_API_PORT}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    links:
+      - postgres
+      - redis
+
+  svelte-frontend:
+    container_name: svelte-frontend
+    build: 
+      context: ../svelte-frontend/
+      target: runtime
+    ports:
+      - ${SVELTE_FRONTEND_PORT}
+    environment:
+      HOST: ${HOST}
+      PORT: ${SVELTE_FRONTEND_PORT}
+    depends_on:
+      - rust-api
+
+  nginx:
+    container_name: nginx
+    image: nginx:alpine
+    ports:
+      - "${NGINX_PORT}:80"
+    volumes:
+      - ./default.conf.template:/etc/nginx/templates/default.conf.template
+    env_file:
+      - .env
+    links:
+      - rust-api
+      - svelte-frontend
+
+volumes:
+  postgres:
+  redis:
