@@ -1,0 +1,12 @@
+server {
+  listen 80;
+
+  location /api {
+    proxy_pass http://rust-api:${RUST_API_PORT};
+    rewrite ^/api/?(.*)$ /$1 break;
+  }
+
+  location / {
+    proxy_pass http://svelte-frontend:${SVELTE_FRONTEND_PORT};
+  }
+}
