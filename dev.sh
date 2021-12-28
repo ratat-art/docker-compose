@@ -1,3 +1,4 @@
 #!/bin/bash
 
-docker-compose -f docker-compose-dev.yml --env-file .env.dev up --build
+cd dev
+docker-compose up --build
