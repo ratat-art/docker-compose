@@ -20,7 +20,7 @@ services:
       retries: 10
     restart: always
     env_file:
-      - .env.dev
+      - .env
     volumes:
       - postgres-dev:/var/lib/postgresql/data
     expose:
@@ -31,17 +31,17 @@ services:
     image: redis:alpine
     volumes:
       - redis-dev:/var/lib/redis
+      - /app/target
     expose:
       - ${REDIS_PORT}
 
   rust-api:
     container_name: rust-api-dev
     build:
-      context: ../rust-api/
+      context: ../../rust-api/
       target: dev
     volumes:
-      - ../rust-api:/app
-      - /app/target
+      - ../../rust-api:/app
     expose:
       - ${RUST_API_PORT}
     environment:
@@ -57,10 +57,10 @@ services:
   svelte-frontend:
     container_name: svelte-frontend-dev
     build:
-      context: ../svelte-frontend/
+      context: ../../svelte-frontend/
       target: dev
     volumes:
-      - ../svelte-frontend:/app
+      - ../../svelte-frontend:/app
       - /app/node_modules
     ports:
       - ${SVELTE_FRONTEND_PORT}:${SVELTE_FRONTEND_PORT}
@@ -83,10 +83,13 @@ services:
     ports:
       - "${NGINX_PORT}:80"
     volumes:
-      - ./default-dev.conf.template:/etc/nginx/templates/default.conf.template
+      - ./nginx.conf:/etc/nginx/templates/default.conf.template
     env_file:
-      - .env.dev
+      - .env
     links:
+      - rust-api
+      - svelte-frontend
+    depends_on:
       - rust-api
       - svelte-frontend
 
